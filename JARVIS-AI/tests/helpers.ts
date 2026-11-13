@@ -12,7 +12,7 @@ export const testEncryptor: Encryptor = {
   decrypt: (b) => Buffer.from(b.toString().slice(4), 'base64').reverse().toString()
 }
 
-export function tmpDir(prefix = 'jarvis-test-') { const d = mkdtempSync(join(tmpdir(), prefix)); return { dir: d, cleanup: () => rmSync(d, { recursive: true, force: true }) } }
+export function tmpDir(prefix = 'jarvis-test-') { const d = mkdtempSync(join(tmpdir(), prefix)); return { dir: d, cleanup: () => { try { rmSync(d, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) } catch { /* Windows keeps open SQLite files locked; the OS temp dir is cleaned later */ } } } }
 export function makeCore(extra: Partial<CoreOptions> = {}, dbPath = ':memory:') { return createCore({ dbPath, encryptor: testEncryptor, ...extra }) }
 
 export interface MockServer { url: string; requests: { method: string; url: string; headers: IncomingMessage['headers']; body: any }[]; close(): Promise<void>; setHandler(h: Handler): void }
