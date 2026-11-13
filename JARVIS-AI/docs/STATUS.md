@@ -22,7 +22,7 @@ Environment note: this session ran in a **Linux cloud container**, not on your W
 ## IMPLEMENTED BUT NOT TESTED ON WINDOWS (command construction unit-tested only)
 * PowerShell/UIA tools: open app via Start Menu index, list/focus/close windows, type/keys/scroll/click, read screen text, media keys, theme.
 * Offline wake word (Windows speech recognizer), global shortcut, tray, startup-with-Windows, DPAPI storage, Recycle Bin deletion, Windows TTS voices, Windows installer, desktop shortcut.
-* The GitHub Actions workflow (`.github/workflows/jarvis-ci.yml`) runs typecheck, tests, e2e and builds the NSIS installer on `windows-latest`. At the time of writing its run had not completed in this session, so **Windows test results and installer are unconfirmed**. Check the Actions tab.
+* The GitHub Actions workflow (`.github/workflows/jarvis-ci.yml`) runs typecheck, tests, e2e and builds the NSIS installer on `windows-latest`. First real Windows run: typecheck passed and 69/72 tests passed (3 failures were temp-folder cleanup `EBUSY` from open SQLite files; fixed afterwards in the test helper). The Windows e2e run and installer build had **not yet been confirmed** when this was written; check the Actions tab.
 
 ## PARTIALLY IMPLEMENTED
 * Wake word: Windows-only, single phrase, accuracy unmeasured; push-to-talk is the dependable path.
