@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
-import { execFileSync } from 'node:child_process'
+import { execFileSync, spawnSync } from 'node:child_process'
 import { createServer, type Server } from 'node:http'
 import { existsSync, mkdirSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
@@ -10,6 +10,15 @@ import { FileSandbox } from '../src/main/tools/files'
 import { BrowserManager, browserTools, checkUrl } from '../src/main/tools/browser'
 import type { Host } from '../src/main/tools/host'
 
+const hasFfmpeg = spawnSync('ffmpeg', ['-version']).status === 0 && spawnSync('ffprobe', ['-version']).status === 0
+function findChrome(): string | undefined {
+  const c: string[] = []
+  if (process.env.JARVIS_TEST_BROWSER) c.push(process.env.JARVIS_TEST_BROWSER)
+  if (existsSync('/opt/pw-browsers')) for (const d of readdirSync('/opt/pw-browsers').filter((x) => x.startsWith('chromium-'))) c.push(join('/opt/pw-browsers', d, 'chrome-linux64', 'chrome'))
+  c.push('/usr/bin/google-chrome', '/usr/bin/chromium', '/usr/bin/chromium-browser')
+  for (const b of [process.env.ProgramFiles, process.env['ProgramFiles(x86)'], process.env.LOCALAPPDATA]) if (b) c.push(join(b, 'Google/Chrome/Application/chrome.exe'), join(b, 'Microsoft/Edge/Application/msedge.exe'))
+  return c.find((x) => existsSync(x))
+}
 const t = tmpDir('jarvis-media-')
 const ws = join(t.dir, 'Workspace'), docs = join(t.dir, 'Documents')
 let core: ReturnType<typeof makeCore>, host: Host
@@ -19,6 +28,9 @@ const clips = { a: join(docs, 'a.mp4'), b: join(docs, 'b.mp4'), silent: join(doc
 
 beforeAll(() => {
   for (const d of [ws, docs, join(t.dir, 'Desktop'), join(t.dir, 'Downloads')]) mkdirSync(d, { recursive: true })
+  host = { platform: process.platform, dataDir: t.dir, userDirs: { desktop: join(t.dir, 'Desktop'), documents: docs, downloads: join(t.dir, 'Downloads'), workspace: ws }, openPath: async () => '', openExternal: async () => {}, trashItem: async () => {}, captureScreen: async () => ({ mime: 'image/png', data: '' }), notify() {}, speak() {} }
+  core = makeCore()
+  if (!hasFfmpeg) return
   ff('-f', 'lavfi', '-i', 'testsrc=size=640x360:rate=25:duration=6', '-f', 'lavfi', '-i', 'sine=frequency=440:duration=6', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-shortest', clips.a)
   ff('-f', 'lavfi', '-i', 'testsrc2=size=320x240:rate=30:duration=5', '-f', 'lavfi', '-i', 'sine=frequency=880:duration=5', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-shortest', clips.b)
   ff('-f', 'lavfi', '-i', 'smptebars=size=480x270:rate=25:duration=4', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', clips.silent)
@@ -27,7 +39,7 @@ beforeAll(() => {
 })
 afterAll(() => t.cleanup())
 
-describe('video pipeline (real FFmpeg on generated sample clips)', () => {
+describe.skipIf(!hasFfmpeg)('video pipeline (real FFmpeg on generated sample clips)', () => {
   let stt: MockServer
   beforeAll(async () => {
     const vs = new VideoService(join(ws, 'videos'))
@@ -83,9 +95,9 @@ describe('video pipeline (real FFmpeg on generated sample clips)', () => {
   })
 })
 
-describe('browser automation (real Chromium against a local test site)', () => {
+describe.skipIf(!findChrome())('browser automation (real Chromium against a local test site)', () => {
   let srv: Server, base = '', bm: BrowserManager
-  const chromePath = readdirSync('/opt/pw-browsers').filter((d) => d.startsWith('chromium-')).map((d) => join('/opt/pw-browsers', d, 'chrome-linux64', 'chrome')).find(existsSync)
+  const chromePath = findChrome()
   beforeAll(async () => {
     srv = createServer((req, res) => {
       res.setHeader('content-type', 'text/html')

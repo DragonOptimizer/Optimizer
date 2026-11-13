@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process'
 import { promises as fs, existsSync, mkdirSync } from 'node:fs'
 import { basename, dirname, extname, join } from 'node:path'
 import { tmpdir } from 'node:os'
+import { transcribeAudio } from './stt'
 
 export interface ProbeInfo { durationSec: number; width?: number; height?: number; fps?: number; hasAudio: boolean; videoCodec?: string; audioCodec?: string; sizeBytes: number; format?: string }
 export interface RunOpts { signal?: AbortSignal; onProgress?: (pct: number) => void; durationSec?: number; cwd?: string }
@@ -142,15 +143,8 @@ export function defaultFont(): string | undefined {
   return c.find((p) => existsSync(p))
 }
 
-/** Speech-to-text via an OpenAI-compatible endpoint (OpenAI Whisper, Groq). Returns text or SRT. */
+/** Transcribe a file (OpenAI-compatible endpoint). Returns text or SRT. */
 export async function transcribeFile(opts: { baseUrl: string; apiKey: string; model: string; file: string; format: 'srt' | 'text'; signal?: AbortSignal }): Promise<string> {
-  const st = await fs.stat(opts.file)
-  if (st.size > 24 * 1024 * 1024) throw new Error('Audio is larger than the 25 MB transcription limit; use a shorter clip.')
-  const form = new FormData()
-  form.set('model', opts.model); form.set('response_format', opts.format === 'srt' ? 'srt' : 'text')
-  form.set('file', new Blob([await fs.readFile(opts.file)]), basename(opts.file))
-  const res = await fetch(`${opts.baseUrl}/v1/audio/transcriptions`, { method: 'POST', headers: { authorization: `Bearer ${opts.apiKey}` }, body: form, signal: opts.signal })
-  const text = await res.text()
-  if (!res.ok) throw new Error(`Transcription failed (HTTP ${res.status}): ${text.slice(0, 200)}`)
-  return text
+  const data = await fs.readFile(opts.file)
+  return transcribeAudio({ baseUrl: opts.baseUrl, apiKey: opts.apiKey, model: opts.model, data, filename: basename(opts.file), mime: 'audio/mpeg', format: opts.format === 'srt' ? 'srt' : 'json', signal: opts.signal })
 }

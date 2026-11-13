@@ -13,6 +13,7 @@ export interface BusEvents {
   speak: { text: string; interrupt?: boolean }
   stop: { reason: string }
   online: { online: boolean }
+  ptt: { mode: 'toggle' | 'wake' }
 }
 
 /** Typed event bus connecting services to the UI layer. Events reflect real execution. */

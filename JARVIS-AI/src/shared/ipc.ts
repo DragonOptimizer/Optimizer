@@ -20,6 +20,7 @@ export const INVOKE_CHANNELS = [
   'video:probe', 'video:pick-files',
   'diagnostics:run', 'diagnostics:logs',
   'audit:list', 'privacy:wipe', 'privacy:export',
+  'phone:set-credentials', 'phone:clear-credentials', 'phone:fetch-rate', 'metrics:report', 'wake:status', 'app:resume', 'privacy:revoke-grants', 'google:set-secret',
   'overlay:toggle', 'window:overlay-expand'
 ] as const
 export type InvokeChannel = (typeof INVOKE_CHANNELS)[number]

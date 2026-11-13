@@ -1,0 +1,27 @@
+appId: com.jarvis.assistant
+productName: JARVIS
+copyright: JARVIS-AI
+directories: { output: release, buildResources: build }
+files:
+  - out/**/*
+  - package.json
+  - build/icon.png
+extraResources:
+  - { from: build/icon.png, to: icon.png }
+asar: true
+asarUnpack:
+  - node_modules/playwright-core/**
+win:
+  target: [{ target: nsis, arch: [x64] }]
+  icon: build/icon.ico
+  signAndEditExecutable: false
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: JARVIS
+  uninstallDisplayName: JARVIS
+  deleteAppDataOnUninstall: false
+artifactName: JARVIS-Setup-${version}.${ext}

@@ -34,8 +34,8 @@ describe('file tools (real filesystem)', () => {
   })
   it('refuses paths outside allowed roots, `..` escapes and symlink escapes', async () => {
     const outside = tmpDir('outside-'); writeFileSync(join(outside.dir, 'secret.txt'), 'x')
-    symlinkSync(outside.dir, join(t.dir, 'Documents', 'link'))
-    for (const p of [join(outside.dir, 'secret.txt'), 'Documents/../../etc/passwd', 'Documents/link/secret.txt', '/etc/passwd']) {
+    let linked = true; try { symlinkSync(outside.dir, join(t.dir, 'Documents', 'link'), 'junction') } catch { linked = false }
+    for (const p of [join(outside.dir, 'secret.txt'), 'Documents/../../etc/passwd', ...(linked ? ['Documents/link/secret.txt'] : []), process.platform === 'win32' ? 'C:\\Windows\\win.ini' : '/etc/passwd']) {
       const r = await core.tools.execute('read_text_file', { path: p }, ctxFor())
       expect(r.ok, p).toBe(false); expect(r.content).toMatch(/outside the folders/)
     }

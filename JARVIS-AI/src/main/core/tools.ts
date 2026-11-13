@@ -70,7 +70,6 @@ export class ToolRegistry {
     const risk = typeof tool.risk === 'function' ? tool.risk(args, ctx) : tool.risk
     const summary = tool.summarize(args)
 
-    this.emit(ctx.taskId, 'tool', 'planned', summary, { tool: name, risk })
     const decisionP = this.perms.decide({ tool: name, category: tool.category, risk, summary, args, unattendedOk: !!tool.unattendedOk, taintExempt: !!tool.taintExempt }, ctx)
     // surface "awaiting approval" on the activity feed only if the decision does not resolve immediately
     let settled = false
