@@ -61,7 +61,6 @@ jobs:
           SHOT_DIR: ${{ runner.temp }}\shots-installed
       - name: Windows computer-control tool tour (Notepad launcher, windows, typing, UI Automation, close+approval)
         id: wintools
-        continue-on-error: true
         run: node scripts/e2e-windows-tools.mjs
         env:
           JARVIS_EXE: C:\JARVIS-install\JARVIS.exe

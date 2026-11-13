@@ -59,7 +59,10 @@ try {
   check('close_application result reported', /closed|still-running/.test(toolOutputs[5] ?? ''), toolOutputs[5])
   await new Promise((r) => setTimeout(r, 1500))
   const after = execFileSync('tasklist', ['/FI', 'IMAGENAME eq notepad.exe'], { encoding: 'utf8' })
-  check('Notepad actually closed', !/notepad\.exe/i.test(after))
+  // Notepad has unsaved typed text, so it legitimately shows "Save changes?" instead of closing. JARVIS must report exactly what happened and never force-kill.
+  const stillRunning = /notepad\.exe/i.test(after)
+  check('close result matches reality (never claims "closed" while Notepad is still running)', stillRunning ? /still-running/.test(toolOutputs[5] ?? '') : /closed/.test(toolOutputs[5] ?? ''), `notepadRunning=${stillRunning}`)
+  try { execFileSync('taskkill', ['/F', '/IM', 'notepad.exe'], { stdio: 'ignore' }) } catch { /* already gone */ } // test cleanup only
 } catch (e) { check('windows tool tour completed', false, e?.stack ?? e) }
 finally { await app.close().catch(() => {}); server.close() }
 console.log(`\n${results.filter(Boolean).length}/${results.length} Windows tool checks passed`)
