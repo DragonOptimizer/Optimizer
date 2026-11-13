@@ -6,7 +6,10 @@ Electron + React + TypeScript + Vite · SQLite (built-in `node:sqlite`) · Playw
 
 > **Honest status:** see [docs/STATUS.md](docs/STATUS.md) for exactly what is implemented, tested, and what still needs your setup or has limitations.
 
-## Quick start (Windows 10/11)
+## Install (Windows 10/11): easiest path
+Download **JARVIS-AI-Setup.exe** from the repository's **Releases** page, verify the SHA-256 shown there, run it (SmartScreen: *More info → Run anyway*, the installer is unsigned). A first-run wizard then sets up your AI key, microphone and voice. Step-by-step: [docs/INSTALL_AND_FIRST_COMMAND.md](docs/INSTALL_AND_FIRST_COMMAND.md). Two-way phone calls plan: [docs/PHASE2-TWO-WAY-CALLS.md](docs/PHASE2-TWO-WAY-CALLS.md).
+
+## Build from source (Windows 10/11)
 
 ```powershell
 git clone <this repo> ; cd Optimizer\JARVIS-AI
