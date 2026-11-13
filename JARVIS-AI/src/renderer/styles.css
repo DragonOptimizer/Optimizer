@@ -98,3 +98,13 @@ textarea { resize: vertical; font-family: inherit; }
 .overlay button { -webkit-app-region: no-drag; background: rgba(25, 211, 255, .1); border: 1px solid var(--panel-b); color: var(--txt); border-radius: 8px; width: 28px; height: 26px; cursor: pointer; } .overlay button.stop { color: #ff8497; } .ov-orb { flex: none; width: 110px; height: 110px; } .ov-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; font-size: 12px; } .ov-state { letter-spacing: .2em; color: var(--cy2); font-size: 11px; display: flex; gap: 6px; align-items: center; } .ov-last { color: var(--mut); font-size: 11px; height: 28px; overflow: hidden; } .ov-btns { display: flex; gap: 4px; } .ov-appr .modal-back { position: absolute; }
 .overlay .nowdoing { text-align: left; font-size: 12px; min-height: 0; }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+/* first-run wizard */
+.wizard-back { z-index: 70; background: rgba(2, 6, 12, .9); }
+.wizard-box { width: min(680px, 94vw); max-height: 92vh; display: flex; flex-direction: column; background: #091a2e; border: 1px solid var(--panel-b); border-radius: 18px; box-shadow: 0 0 80px rgba(25, 211, 255, .22); overflow: hidden; }
+.wiz-steps { display: flex; gap: 4px; flex-wrap: wrap; padding: 12px 16px; border-bottom: 1px solid var(--line); background: rgba(3, 9, 18, .5); }
+.wiz-step { font-size: 11.5px; padding: 3px 10px; border-radius: 12px; color: var(--mut); } .wiz-step.on { background: rgba(25, 211, 255, .2); color: #fff; } .wiz-step.done { color: var(--green); }
+.wiz-body { padding: 18px 22px; overflow: auto; flex: 1; } .wiz-body h2 { margin-bottom: 10px; color: var(--cy2); }
+.wiz-foot { display: flex; justify-content: space-between; align-items: center; padding: 12px 18px; border-top: 1px solid var(--line); }
+.wiz-res { margin: 10px 0; padding: 9px 12px; border-radius: 10px; font-size: 13px; } .wiz-ok { border: 1px solid rgba(43, 227, 155, .5); background: rgba(43, 227, 155, .08); color: #8ff0c6; } .wiz-bad { border: 1px solid rgba(255, 84, 112, .5); background: rgba(255, 84, 112, .08); color: #ff9aa9; }
+.meter { height: 12px; border-radius: 8px; background: rgba(3, 9, 18, .8); border: 1px solid var(--line); overflow: hidden; margin: 10px 0; } .meter i { display: block; height: 100%; background: linear-gradient(90deg, var(--cy2), var(--bl)); transition: width .05s; }

@@ -15,7 +15,7 @@
     "test": "vitest run",
     "test:e2e": "node scripts/e2e-launch.mjs",
     "doctor": "node scripts/doctor.mjs",
-    "dist": "electron-vite build && electron-builder --win --x64 --config electron-builder.yml",
+    "dist": "electron-vite build && electron-builder --win --x64 --publish never --config electron-builder.yml",
     "dist:dir": "electron-vite build && electron-builder --win --x64 --dir --config electron-builder.yml", "icons": "node scripts/make-icons.mjs"
   },
   "dependencies": {

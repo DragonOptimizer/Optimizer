@@ -127,6 +127,7 @@ async function start() {
 
   registerIpc()
   createMain(); buildTray(); applySettingsSideEffects(core.settings.get())
+  if (E2E) (globalThis as any).__jarvisTest = { tray: () => tray, trayMenu: () => ['Open JARVIS', 'Floating overlay', 'Mute microphone', 'EMERGENCY STOP', 'Resume after stop', 'Quit'], loginItem: () => app.getLoginItemSettings(), packaged: app.isPackaged }
   setInterval(() => { const ok = net.isOnline() || core.settings.get().ai.provider === 'ollama'; core.state.setOnline(ok); broadcast('event:online', { online: ok }) }, 5000).unref()
   app.on('activate', showMain)
   app.on('before-quit', () => { quitting = true })
@@ -147,6 +148,7 @@ function registerIpc() {
   handle('app:stop-all', () => { core.stopAll('Emergency stop button'); return true })
   handle('app:resume', () => { core.resume(); return true })
   handle('app:quit', () => { quitting = true; app.quit() })
+  handle('app:open-mic-settings', () => (process.platform === 'win32' ? shell.openExternal('ms-settings:privacy-microphone') : false))
   handle('app:open-data-dir', () => shell.openPath(app.getPath('userData')))
   handle('app:set-state', (s: 'idle' | 'listening' | 'speaking') => { core.state.setVoice(s); return true })
 

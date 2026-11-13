@@ -78,6 +78,9 @@ export function Settings() {
           <Toggle checked={s.ui.minimizeToTray} onChange={(v) => ui({ minimizeToTray: v })} label="Keep running in the system tray when closed" />
           <Toggle checked={s.ui.startWithWindows} onChange={(v) => ui({ startWithWindows: v })} label="Start with Windows (minimised to tray)" hint="Takes effect in the installed app." />
         </Card>
+        <Card title="Setup">
+          <Btn onClick={() => void updateSettings({ ui: { onboardingDone: false } })}>Run the first-run setup wizard again</Btn>
+        </Card>
         <Card title="App lock (PIN)">
           <p className="small muted">Optional local PIN. While locked, JARVIS refuses all actions except the emergency stop.</p>
           <div className="row"><input type="password" inputMode="numeric" value={pin} onChange={(e) => setPin(e.target.value)} placeholder="4–12 digit PIN" />

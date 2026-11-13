@@ -19,11 +19,11 @@ export const DEFAULT_SETTINGS: Settings = {
     speechRate: 1, listenTimeoutSec: 12, inputDeviceId: '', outputDeviceId: '', speakResponses: true
   },
   computer: { enabled: true, allowedRoots: [], approvalMode: 'balanced', browser: 'chrome', browserHeadless: false, allowLocalBrowsing: false, persistBrowserProfile: false },
-  ui: { alwaysOnTop: false, overlayEnabled: false, startWithWindows: false, minimizeToTray: true },
+  ui: { alwaysOnTop: false, overlayEnabled: false, startWithWindows: false, minimizeToTray: true, onboardingDone: false },
   phone: {
     telegramEnabled: false, callsEnabled: false, callsAcknowledgedCosts: false, userNumber: '', callerNumber: '', callVoice: 'Polly.Matthew',
     callWindowStart: '08:00', callWindowEnd: '21:00', maxCallSeconds: 120, monthlySpendLimitUsd: 5, estCostPerMinuteUsd: 0
   },
-  google: { clientId: '', gmailEnabled: true, classroomEnabled: true, notifyImportantMail: false },
+  google: { clientId: '', gmailEnabled: false, classroomEnabled: false, notifyImportantMail: false },
   security: { pinEnabled: false, approvalTimeoutSec: 120 }
 }

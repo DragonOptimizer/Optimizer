@@ -24,4 +24,4 @@ nsis:
   shortcutName: JARVIS
   uninstallDisplayName: JARVIS
   deleteAppDataOnUninstall: false
-artifactName: JARVIS-Setup-${version}.${ext}
+artifactName: JARVIS-AI-Setup.${ext}

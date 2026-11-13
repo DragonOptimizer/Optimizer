@@ -40,8 +40,10 @@ const server = createServer((req, res) => {
 await new Promise((r) => server.listen(0, '127.0.0.1', r))
 const base = `http://127.0.0.1:${server.address().port}`
 
+const EXE = process.env.JARVIS_EXE // when set, test the INSTALLED app instead of out/main
 const launch = () => electron.launch({
-  args: [join(root, 'out/main/index.js'), '--no-sandbox', '--disable-gpu'],
+  ...(EXE ? { executablePath: EXE } : {}),
+  args: [...(EXE ? [] : [join(root, 'out/main/index.js')]), '--no-sandbox', '--disable-gpu'],
   env: { ...process.env, HOME: home, USERPROFILE: home, XDG_CONFIG_HOME: join(home, '.config'), JARVIS_E2E: '1', JARVIS_FAKE_AUDIO_FILE: wav, JARVIS_USER_DATA: userData, JARVIS_TEST_PROVIDER_URL: base, JARVIS_TEST_STT_URL: base, ELECTRON_RENDERER_URL: '' }
 })
 const errors = []
@@ -59,6 +61,46 @@ try {
   check('app launches and renders the orb', true)
   check('window title', (await page.title()) === 'JARVIS')
   await page.screenshot({ path: join(shots, '01-home-idle.png') })
+
+  // ── first-run: fresh profile must show the setup wizard; paid/sensitive integrations must be OFF by default
+  const d0 = await page.evaluate(async () => ({ s: await window.jarvis.invoke('settings:get'), tg: await window.jarvis.invoke('telegram:status'), g: await window.jarvis.invoke('google:status'), ph: await window.jarvis.invoke('phone:status') }))
+  check('integrations are OFF by default (Gmail, Classroom, Telegram, calls)', !d0.s.google.gmailEnabled && !d0.s.google.classroomEnabled && !d0.s.phone.callsEnabled && !d0.s.phone.telegramEnabled && !d0.tg.configured && !d0.g.connected && !d0.ph.enabled && !d0.ph.credentials)
+  check('wake word & start-with-Windows are OFF by default', !d0.s.voice.wakeWordEnabled && !d0.s.ui.startWithWindows)
+  await page.waitForSelector('.wizard', { timeout: 15000 })
+  check('first-run setup wizard appears on a fresh profile', true)
+  await page.screenshot({ path: join(shots, '00-wizard-welcome.png') })
+  const next = () => page.locator('.wizard .btn.primary', { hasText: 'Next' }).click()
+  await next()
+  script = [{ text: 'ready' }]
+  await page.locator('.wiz-key').fill('sk-ant-e2e-0000000000')
+  await page.locator('.wizard .btn', { hasText: 'Save & test' }).click()
+  const aiOk = await page.waitForSelector('.wiz-ok:has-text("Connected")', { timeout: 20000 }).then(() => true, () => false)
+  check('wizard: AI key saved and connection tested', aiOk)
+  await page.screenshot({ path: join(shots, '00-wizard-ai.png') })
+  await next()
+  await page.locator('.wizard .btn', { hasText: 'Test microphone' }).click()
+  const micOk = await page.waitForSelector('.wiz-ok:has-text("Microphone works"), .wiz-bad', { timeout: 15000 }).then((e) => e.evaluate((n) => n.classList.contains('wiz-ok')), () => false)
+  check('wizard: microphone permission + signal test (fake mic device)', micOk)
+  await next()
+  await page.locator('.wiz-stt-key').fill('sk-e2e-stt-0000000000000')
+  await page.locator('.wizard .btn', { hasText: 'Save speech settings' }).click()
+  check('wizard: speech-recognition key saved', await page.waitForSelector('.wiz-ok:has-text("Key saved")', { timeout: 10000 }).then(() => true, () => false))
+  await page.locator('.wizard .btn', { hasText: 'Hear a sample' }).click().catch(() => {})
+  await page.waitForTimeout(500)
+  await next()
+  await page.locator('.wizard .toggle', { hasText: 'Start JARVIS when I sign in' }).click()
+  await page.waitForTimeout(600)
+  const li = await app.evaluate(() => ({ packaged: globalThis.__jarvisTest?.packaged, openAtLogin: globalThis.__jarvisTest?.loginItem().openAtLogin }))
+  if (li.packaged) check('installed app registers start-with-Windows (login item)', li.openAtLogin === true, JSON.stringify(li)); else console.log('SKIP  login item check (only meaningful in the installed/packaged app)')
+  await page.screenshot({ path: join(shots, '00-wizard-windows.png') })
+  await next()
+  await page.locator('.wizard .btn', { hasText: 'Finish setup' }).click()
+  await page.waitForSelector('.wizard', { state: 'detached', timeout: 8000 })
+  const d1 = await page.evaluate(() => window.jarvis.invoke('settings:get'))
+  check('wizard completes and choices are persisted', d1.ui.onboardingDone && d1.ui.startWithWindows && d1.ai.provider === 'anthropic')
+  await page.evaluate(() => window.jarvis.invoke('settings:update', { ui: { startWithWindows: false } }))
+  const tray = await app.evaluate(() => ({ has: !!globalThis.__jarvisTest?.tray(), menu: globalThis.__jarvisTest?.trayMenu() }))
+  check('system tray icon created with STOP/Resume/Quit menu', tray.has && tray.menu.includes('EMERGENCY STOP'), JSON.stringify(tray))
 
   // security posture of the renderer
   const sec = await page.evaluate(async () => ({ req: typeof window.require, proc: typeof window.process, jarvis: typeof window.jarvis, bad: await window.jarvis.invoke('shell:exec').then(() => 'allowed', (e) => String(e.message)) }))
@@ -79,8 +121,9 @@ try {
   check('folder really exists on disk', existsSync(join(desktop, 'School Projects')))
   const feed = await page.locator('.feed').first().innerText()
   check('activity feed shows real tool events', /Plan:|Creating folder/.test(feed) && /Done: Creating folder|Creating folder/.test(feed), feed.replace(/\n/g, ' | ').slice(0, 160))
-  check('system prompt carried preferred name & rules', /Tony/.test(aiRequests[0].system) && /untrusted_content/.test(aiRequests[0].system))
-  check('tools were offered to the model', aiRequests[0].tools.some((t) => t.name === 'open_application'))
+  const chatReq = aiRequests.find((r) => r.tools?.length) ?? aiRequests[0]
+  check('system prompt carried preferred name & rules', /Tony/.test(chatReq.system) && /untrusted_content/.test(chatReq.system))
+  check('tools were offered to the model', chatReq.tools.some((t) => t.name === 'open_application'))
   await page.screenshot({ path: join(shots, '02-chat-tool-run.png') })
 
   // approval flow: sensitive overwrite → dialog → deny, then allow

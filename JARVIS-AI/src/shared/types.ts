@@ -118,7 +118,7 @@ export interface Settings {
     speakResponses: boolean
   }
   computer: { enabled: boolean; allowedRoots: string[]; approvalMode: 'strict' | 'balanced'; browser: 'chrome' | 'msedge' | 'chromium'; browserHeadless: boolean; allowLocalBrowsing: boolean; persistBrowserProfile: boolean }
-  ui: { alwaysOnTop: boolean; overlayEnabled: boolean; startWithWindows: boolean; minimizeToTray: boolean }
+  ui: { alwaysOnTop: boolean; overlayEnabled: boolean; startWithWindows: boolean; minimizeToTray: boolean; onboardingDone: boolean }
   phone: {
     telegramEnabled: boolean
     callsEnabled: boolean

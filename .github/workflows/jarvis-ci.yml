@@ -12,8 +12,10 @@ defaults:
 
 jobs:
   windows:
-    name: Windows build, tests, installer
+    name: Windows build, tests, installer, install smoke test, release
     runs-on: windows-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -27,24 +29,92 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
-      - name: End-to-end (real Electron on Windows)
+      - name: End-to-end on Windows (built app)
         run: node scripts/e2e-launch.mjs
         env:
-          SHOT_DIR: ${{ runner.temp }}\shots
-        continue-on-error: true
+          SHOT_DIR: ${{ runner.temp }}\shots-built
       - name: Build Windows installer
         run: npm run dist
+      - name: Installer file check
+        run: |
+          $f = Get-Item release\JARVIS-AI-Setup.exe
+          "{0} bytes" -f $f.Length
+          if ($f.Length -lt 50MB) { throw "Installer is suspiciously small" }
+      - name: Silent install (real NSIS installer)
+        run: |
+          $p = Start-Process -FilePath "$PWD\release\JARVIS-AI-Setup.exe" -ArgumentList '/S','/D=C:\JARVIS-install' -Wait -PassThru
+          "installer exit code: $($p.ExitCode)"
+          if ($p.ExitCode -ne 0) { throw "Installer failed" }
+          if (-not (Test-Path C:\JARVIS-install\JARVIS.exe)) { throw "JARVIS.exe was not installed" }
+          $desk = @([Environment]::GetFolderPath('Desktop'), [Environment]::GetFolderPath('CommonDesktopDirectory'))
+          $start = @([Environment]::GetFolderPath('Programs'), [Environment]::GetFolderPath('CommonPrograms'))
+          $d = $desk | ForEach-Object { Get-ChildItem $_ -Filter 'JARVIS*.lnk' -ErrorAction SilentlyContinue }
+          $s = $start | ForEach-Object { Get-ChildItem $_ -Filter 'JARVIS*.lnk' -ErrorAction SilentlyContinue }
+          "desktop shortcut: $($d.FullName)"
+          "start menu shortcut: $($s.FullName)"
+          if (-not $d) { throw "Desktop shortcut was not created" }
+          if (-not $s) { throw "Start menu shortcut was not created" }
+      - name: End-to-end against the INSTALLED app
+        run: node scripts/e2e-launch.mjs
+        env:
+          JARVIS_EXE: C:\JARVIS-install\JARVIS.exe
+          SHOT_DIR: ${{ runner.temp }}\shots-installed
+      - name: Windows computer-control tool tour (Notepad launcher, windows, typing, UI Automation, close+approval)
+        id: wintools
+        continue-on-error: true
+        run: node scripts/e2e-windows-tools.mjs
+        env:
+          JARVIS_EXE: C:\JARVIS-install\JARVIS.exe
+      - name: Uninstall (silent) and verify removal
+        run: |
+          $p = Start-Process -FilePath 'C:\JARVIS-install\Uninstall JARVIS.exe' -ArgumentList '/S','_?=C:\JARVIS-install' -Wait -PassThru
+          "uninstaller exit code: $($p.ExitCode)"
+          Start-Sleep -Seconds 2
+          if (Test-Path C:\JARVIS-install\JARVIS.exe) { throw "JARVIS.exe still present after uninstall" }
+      - name: SHA-256 and release notes
+        id: hash
+        run: |
+          $h = (Get-FileHash release\JARVIS-AI-Setup.exe -Algorithm SHA256).Hash.ToLower()
+          "$h  JARVIS-AI-Setup.exe" | Out-File -Encoding ascii release\SHA256SUMS.txt
+          "sha256=$h" | Out-File -Append -Encoding ascii $env:GITHUB_OUTPUT
+          $tools = '${{ steps.wintools.outcome }}'
+          @"
+          ## JARVIS-AI for Windows 10/11 (x64)
+
+          **SHA-256:** ``$h``
+
+          ### Install
+          1. Download ``JARVIS-AI-Setup.exe`` below.
+          2. Optional: in PowerShell run ``Get-FileHash .\JARVIS-AI-Setup.exe -Algorithm SHA256`` and compare with the value above.
+          3. Double-click it. The installer is **not code-signed**, so Windows SmartScreen may say "Windows protected your PC": click **More info** then **Run anyway**.
+          4. Choose an install folder, finish, and start JARVIS from the desktop or Start menu shortcut. A first-run wizard guides you through your AI key, microphone and voice.
+
+          ### What was verified on a Windows runner for this build
+          typecheck, 72+ unit/integration tests (real FFmpeg and real Chrome/Edge), Electron end-to-end suite against the built app AND against the silently-installed app, desktop + Start menu shortcuts, uninstall. Windows computer-control tool tour (Notepad etc.): **$tools**.
+          Not verified: real microphone/speakers, real AI/Google/Telegram/Twilio accounts (need your keys).
+          "@ | Out-File -Encoding utf8 release-notes.md
       - uses: actions/upload-artifact@v4
         with:
-          name: JARVIS-Windows-installer
-          path: JARVIS-AI/release/JARVIS-Setup-*.exe
+          name: JARVIS-AI-Setup-windows-x64
+          path: |
+            JARVIS-AI/release/JARVIS-AI-Setup.exe
+            JARVIS-AI/release/SHA256SUMS.txt
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: e2e-screenshots-windows
-          path: ${{ runner.temp }}\shots
+          path: |
+            ${{ runner.temp }}\shots-built
+            ${{ runner.temp }}\shots-installed
           if-no-files-found: ignore
+      - name: Publish GitHub Release (pre-release) with the installer
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "jarvis-build-${{ github.run_number }}"
+          gh release create $tag release/JARVIS-AI-Setup.exe release/SHA256SUMS.txt --repo ${{ github.repository }} --target ${{ github.sha }} --prerelease --title "JARVIS-AI Windows installer (build ${{ github.run_number }})" --notes-file release-notes.md
+          "release: https://github.com/${{ github.repository }}/releases/tag/$tag"
 
   linux:
     name: Linux tests and Electron e2e (xvfb)

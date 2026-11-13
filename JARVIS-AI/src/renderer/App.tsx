@@ -14,6 +14,7 @@ import { History, Automations, Memory } from './pages/Data'
 import { Settings } from './pages/Settings'
 import { Privacy, Diagnostics } from './pages/System'
 import { Overlay } from './pages/Overlay'
+import { Wizard } from './components/Wizard'
 
 const NAV: [string, string, string][] = [
   ['home', '◉', 'Conversation'], ['computer', '🖥', 'Computer'], ['apps', '🧩', 'Connected apps'], ['email', '✉', 'Email'], ['classroom', '🎓', 'Classroom'], ['video', '🎬', 'Video editing'],
@@ -30,7 +31,7 @@ function Lock() {
 }
 
 export function App() {
-  const ready = useUi((s) => s.ready), snap = useUi((s) => s.snapshot), orb = useUi((s) => s.orb), tst = useUi((s) => s.toast), approvals = useUi((s) => s.approvals), mic = useUi((s) => s.micLive)
+  const onboarded = useUi((s) => s.settings.ui.onboardingDone), ready = useUi((s) => s.ready), snap = useUi((s) => s.snapshot), orb = useUi((s) => s.orb), tst = useUi((s) => s.toast), approvals = useUi((s) => s.approvals), mic = useUi((s) => s.micLive)
   const route = useRoute(); const overlay = route === 'overlay'
   useEffect(() => { void initStore().then(() => voice.start()).catch((e) => toast(errMsg(e), 'error')) }, [])
   useEffect(() => { document.body.classList.toggle('overlay-body', overlay) }, [overlay])
@@ -55,6 +56,7 @@ export function App() {
         </header>
         <div className="content"><Page /></div>
       </main>
+      {!onboarded && <Wizard />}
       <ApprovalDialog />
       {tst && <div className={`toast ${tst.kind}`}>{tst.text}</div>}
     </div>
