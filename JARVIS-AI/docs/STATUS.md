@@ -1,44 +1,30 @@
-# JARVIS-AI: honest status report
+# JARVIS-AI: status (verified results)
 
-Environment note: this session ran in a **Linux cloud container**, not on your Windows PC. Everything below was verified there (real Electron under a virtual display, real FFmpeg, real Chromium, fixture HTTP servers standing in for cloud APIs). Anything that needs Windows, your accounts, your hardware or paid credentials is marked accordingly. **I could not inspect your PC**: run `npm run doctor` on it.
+Everything marked **VERIFIED ON WINDOWS** was observed in real GitHub Actions logs on a `windows-latest` runner (Windows build 10.0.26100, x64) by the CI workflow `.github/workflows/jarvis-ci.yml`. Anything needing your hardware, accounts or money is marked **NEEDS YOUR PC / ACCOUNT**.
 
-## IMPLEMENTED AND TESTED (in this session, Linux)
-* 72 unit/integration tests pass; TypeScript strict typecheck clean (node + web).
-* Real Electron app launches, renders orb/UI, all 14 pages render without errors; 39/39 end-to-end UI checks pass (`scripts/e2e-launch.mjs`): chat → AI → tool → verified result, live activity feed, approval dialog (deny blocks, allow runs), emergency stop, overlay window, restart persistence (settings, memory, conversations), scheduled reminder firing, microphone indicator and **voice capture → VAD → speech-to-text → chat using a synthetic WAV through Chromium's fake mic** (proves the pipeline; not real speech or a real mic).
-* Renderer security: no Node access, allow-listed IPC only (verified in the e2e run).
-* AI adapters for Anthropic, OpenAI, Gemini, Ollama: request/response mapping, tool calling, retry/backoff, cancellation, error messages (verified against local fixture servers that mimic each API's documented shapes, **not against the real services**).
-* Agent loop: planning, tool execution, failure reporting, max-step and repeated-call guards, token limits, cancellation, crash recovery of interrupted tasks.
-* Permissions: risk levels, approvals, unattended restrictions, taint tracking (prompt-injection defence), audit log, emergency stop.
-* Files (sandbox incl. symlink/`..` escapes, create/move/search/verify), memory (persist, refuses secrets), scheduler (persist, dedupe, restart, missed-run handling), Telegram service (pairing, unauthorised senders ignored, long polling) and Twilio gating/TwiML/limits against fixture servers, Google OAuth PKCE + refresh + revoked sessions, Gmail/Classroom request handling, FFmpeg video pipeline (probe, trim, split, join mixed clips, vertical, text, volume, convert, preview, montage, subtitles via STT fixture) and Playwright browser automation on a local page (open/read/click/fill/submit/screenshot/URL policy).
+## Installer
+* `JARVIS-AI-Setup.exe` (NSIS, x64, ~125 MB, unsigned) is built by CI and published as a GitHub **pre-release** (`jarvis-build-N`) with `SHA256SUMS.txt`, plus a downloadable Actions artifact. Use the highest build number.
+* VERIFIED ON WINDOWS (build 8, run 43483395039): silent install to a folder, `JARVIS.exe` present, **desktop and Start menu shortcuts created**, the **installed** app launched and passed the full end-to-end suite (49/49), silent uninstall exit code 0 and removed the app.
+* NOT code-signed: Windows SmartScreen will warn; use *More info → Run anyway* after checking the SHA-256.
 
-## IMPLEMENTED BUT REQUIRES CONFIGURATION (NOT TESTED against real services; REQUIRES USER SETUP)
-* Real AI calls (needs your API key / Ollama), real speech recognition (Whisper key), OpenAI TTS.
-* Gmail & Classroom against real Google (your OAuth client; school admin may block).
-* Telegram against the real Bot API (your bot token).
-* Twilio calls against the real service (credentials, numbers, **cost**). No real call was placed.
-* Video subtitles against real Whisper.
-* Windows PDF attachments from Classroom: implemented; actual access depends on your school's permissions.
+## VERIFIED ON WINDOWS (CI logs)
+* TypeScript typecheck, 74 unit/integration tests (incl. real FFmpeg video pipeline and real Chrome/Edge browser automation against a local page).
+* Electron end-to-end against the built app and against the installed app: first-run wizard (AI key + connection test, microphone test, speech key, Windows toggles, persisted), integrations OFF by default, main UI and all 14 pages, chat → AI → tool → verified result, approval dialog (deny blocks, allow runs), emergency STOP blocks tools until resumed, system tray created (menu has EMERGENCY STOP/Resume/Quit), start-with-Windows login item registers and can be turned off, floating overlay, settings/memory/conversation persistence across restart, scheduled reminder fires, secrets encrypted with real Windows DPAPI, renderer sandbox (no Node access, blocked IPC channels), voice capture → VAD → speech-to-text → chat using a synthetic WAV through Chromium's fake microphone.
+* Windows computer-control tool tour with the installed app: `open_application` launches Notepad and verifies a real window, `list_windows`, `type_text`, `read_screen_text` (UI Automation read the typed text back), `close_application` asks for approval and reports reality honestly (Notepad with unsaved text shows "Save changes?", and JARVIS says `still-running`; it never force-kills).
 
-## IMPLEMENTED BUT NOT TESTED ON WINDOWS (command construction unit-tested only)
-* PowerShell/UIA tools: open app via Start Menu index, list/focus/close windows, type/keys/scroll/click, read screen text, media keys, theme.
-* Offline wake word (Windows speech recognizer), global shortcut, tray, startup-with-Windows, DPAPI storage, Recycle Bin deletion, Windows TTS voices, Windows installer, desktop shortcut.
-* The GitHub Actions workflow (`.github/workflows/jarvis-ci.yml`) runs typecheck, tests, e2e and builds the NSIS installer on `windows-latest`. First real Windows run: typecheck passed and 69/72 tests passed (3 failures were temp-folder cleanup `EBUSY` from open SQLite files; fixed afterwards in the test helper). The Windows e2e run and installer build had **not yet been confirmed** when this was written; check the Actions tab.
+## NEEDS YOUR PC / ACCOUNT (not testable in CI)
+* Your real microphone and speakers, Windows microphone privacy permission, your voices' quality, real latency.
+* The offline "Hey Jarvis" wake word (needs an installed Windows speech recognizer and your mic; accuracy unmeasured).
+* Global push-to-talk shortcut (`Ctrl+Alt+J`) and emergency shortcut (`Ctrl+Alt+Shift+X`) on your keyboard layout; starting after a real Windows sign-in; your actual tray area.
+* Real AI calls (your Anthropic/OpenAI/Gemini key or Ollama), real Whisper transcription (OpenAI/Groq key).
+* Gmail, Google Classroom (your Google OAuth client; school admin may block), Telegram (your bot), Twilio calls (account, numbers, cost). **All off by default.** No real call has ever been placed.
+* Controlling apps other than Notepad (depends on the app exposing UI Automation).
 
-## PARTIALLY IMPLEMENTED
-* Wake word: Windows-only, single phrase, accuracy unmeasured; push-to-talk is the dependable path.
-* Voice latency: not benchmarked (the diagnostics page measures STT/TTS/task times on your PC as you use it). Replies appear when complete (no token streaming yet).
-* Instagram: generic browser workflow only (open/read/draft); no platform-specific automation.
-* Video: basic FFmpeg edits only. Montage = evenly-sized middle segments; no highlight/beat detection.
-* Phone calls: one-way spoken reminders only.
-* Installer: `win-unpacked` build succeeded here; NSIS packaging needs Windows/Wine, so it is delegated to CI/your PC (`npm run dist`).
+## Known limitations
+* Replies appear when complete (no token streaming). Wake word is Windows-only and a single phrase. Video is basic FFmpeg editing (no cinematic/beat-sync/highlight detection, no DaVinci/CapCut automation). Instagram is the generic browser workflow only.
+* Phone calls are one-way spoken messages. Two-way calls are planned in [PHASE2-TWO-WAY-CALLS.md](PHASE2-TWO-WAY-CALLS.md) and need a public relay you host; nothing paid will be started without your approval.
+* Installer is unsigned; no auto-update. `node:sqlite` is flagged experimental by Node (works in Electron 45).
+* Telegram bot chats are not end-to-end encrypted; remote (phone) requests are read-only by design.
 
-## NOT IMPLEMENTED
-* Two-way conversational phone calls (needs a public HTTPS/WebSocket endpoint; see SETUP.md).
-* DaVinci Resolve / CapCut automation; user-defined workflow macro editor; code signing; auto-update; local/offline speech-to-text; screen-vision beyond sending screenshots to a vision-capable model.
-
-## KNOWN LIMITATIONS
-* Not every Windows app exposes UI Automation; unsupported actions return errors rather than pretending.
-* Model quality decides how well multi-step tasks go; Ollama models without tool-calling will not work.
-* `node:sqlite` is marked experimental in Node (stable enough in Electron 45; prints a warning in tests).
-* Remote (Telegram) requests are read-only by design.
-* Telegram bot chats are not end-to-end encrypted.
+## Not implemented
+Two-way phone calls; local/offline speech-to-text; code signing; auto-update; macro/workflow editor UI.
