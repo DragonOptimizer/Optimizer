@@ -99,6 +99,8 @@ try {
   const d1 = await page.evaluate(() => window.jarvis.invoke('settings:get'))
   check('wizard completes and choices are persisted', d1.ui.onboardingDone && d1.ui.startWithWindows && d1.ai.provider === 'anthropic')
   await page.evaluate(() => window.jarvis.invoke('settings:update', { ui: { startWithWindows: false } }))
+  await page.waitForTimeout(500)
+  if (li.packaged) { const off = await app.evaluate(() => globalThis.__jarvisTest.loginItem().openAtLogin); check('start-with-Windows can be turned off again (login item removed)', off === false, String(off)) }
   const tray = await app.evaluate(() => ({ has: !!globalThis.__jarvisTest?.tray(), menu: globalThis.__jarvisTest?.trayMenu() }))
   check('system tray icon created with STOP/Resume/Quit menu', tray.has && tray.menu.includes('EMERGENCY STOP'), JSON.stringify(tray))
 

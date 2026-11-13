@@ -127,7 +127,7 @@ async function start() {
 
   registerIpc()
   createMain(); buildTray(); applySettingsSideEffects(core.settings.get())
-  if (E2E) (globalThis as any).__jarvisTest = { tray: () => tray, trayMenu: () => ['Open JARVIS', 'Floating overlay', 'Mute microphone', 'EMERGENCY STOP', 'Resume after stop', 'Quit'], loginItem: () => app.getLoginItemSettings(), packaged: app.isPackaged }
+  if (E2E) (globalThis as any).__jarvisTest = { tray: () => tray, trayMenu: () => ['Open JARVIS', 'Floating overlay', 'Mute microphone', 'EMERGENCY STOP', 'Resume after stop', 'Quit'], loginItem: () => app.getLoginItemSettings({ args: ['--hidden'] }), packaged: app.isPackaged }
   setInterval(() => { const ok = net.isOnline() || core.settings.get().ai.provider === 'ollama'; core.state.setOnline(ok); broadcast('event:online', { online: ok }) }, 5000).unref()
   app.on('activate', showMain)
   app.on('before-quit', () => { quitting = true })
